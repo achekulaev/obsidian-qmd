@@ -31,6 +31,9 @@ obsidian-qmd/
 ├── version-bump.mjs      # ✅ Version management script
 ├── versions.json         # ✅ Version history
 ├── styles.css            # ✅ Plugin styles
+├── .github/
+│   └── workflows/
+│       └── release.yml   # ✅ GitHub Actions release workflow
 ├── .gitignore            # ✅ Git ignore rules
 ├── LICENSE               # ✅ MIT License
 ├── README.md             # ✅ User documentation
@@ -48,8 +51,8 @@ obsidian-qmd/
 2. **Main Plugin** (`src/main.ts`)
    - Settings load/save
    - Desktop-only detection
-   - File watcher for auto-indexing (debounced)
-   - Optional periodic updates
+   - File watcher for auto-indexing and auto-embedding (debounced, only when changes detected)
+   - Optional periodic updates (skipped when no pending changes)
    - All commands registered
    - Ribbon icon support
    - Search pane view registration
@@ -58,11 +61,14 @@ obsidian-qmd/
 3. **Search Modal** (`src/searchModal.ts`)
    - SuggestModal-based interface
    - Semantic-first with fallback logic
-   - **500ms trailing-edge debounce** - waits for user to stop typing
+   - **1000ms trailing-edge debounce** - waits for user to stop typing
    - **Animated progress bar** - appears below search input when searching
-   - **Cancellable search** - typing kills in-flight search process
+   - **Cancellable search** - typing kills in-flight search process via searchId generation tracking
    - **Smart file matching** - matches QMD's slugified paths to actual files via title or slug
-   - Result rendering with scores
+   - **Search mode pill** - semi-transparent purple pill inside input field showing "semantic" or "keyword (fallback)"
+   - **Clean results** - titles only (no file paths), diff hunk headers stripped from snippets
+   - **50-character input limit**
+   - Result rendering with optional scores
 
 4. **Search Pane** (`src/searchPane.ts`)
    - ItemView-based sidebar pane
@@ -106,19 +112,37 @@ The original problem was that `qmd.test.ts` used `jest.mock()` which gets hoiste
 - **File path resolution**: QMD returns slugified paths (e.g., `costly-rituals.md` for `Costly Rituals.md`), fixed by matching via title or slug conversion
 
 ### Search UX Improvements
-- **Trailing-edge debounce (500ms)**: Search only starts after user stops typing for 500ms
-- **Cancellable search**: Typing while a search is running kills the QMD process immediately
-- **Animated progress bar**: Shows below search input when search is in progress
+- **Trailing-edge debounce (1000ms)**: Search only starts after user stops typing for 1000ms
+- **Cancellable search**: Typing while a search is running kills the QMD process immediately; uses searchId generation tracking to prevent stale searches from corrupting state or showing false fallback notices
+- **Animated progress bar**: Shows below search input when search is in progress; properly cleaned up before re-render to avoid stuck state
 - **Scroll position preservation**: Results don't jump to top when updating
+- **Snippet cleanup**: Diff hunk headers (`@@ -1,1 @@ (0 before, 0 after)`) stripped from QMD search snippets
+- **Search mode pill**: Moved per-result mode pills to a single semi-transparent purple pill inside the input field
+- **Cleaner results**: Removed file paths from results (title only), removed per-result mode indicator
+- **Input limit**: Search input capped at 50 characters
+
+### Auto-Embedding on File Changes
+- File watchers now trigger both `qmd update` (index) and `qmd embed` (embeddings) so new/changed notes are immediately available for semantic search
+- Uses a `hasPendingChanges` flag set by Obsidian vault events to avoid unnecessary QMD calls
+- Periodic updates also skip when there are no pending changes
 
 ## Key Design Decisions
 
 1. **Semantic-First** - Vector search is always tried first, keyword search is fallback only
 2. **Auto-Embeddings** - Embeddings are generated automatically when missing (QMD is fully local, no API costs)
 3. **Queue Management** - Only one QMD process runs at a time to prevent race conditions
-4. **Cancellable Search** - Uses `exec` directly (not promisified) to track and kill ChildProcess
+4. **Cancellable Search** - Uses `exec` directly (not promisified) to track and kill ChildProcess; searchId generation prevents stale results/side-effects
 5. **Desktop Only** - Plugin checks for filesystem access and disables on mobile
 6. **Native UX** - Uses Obsidian's standard UI patterns (SuggestModal, ItemView, SettingTab)
+
+## Releasing
+
+A GitHub Actions workflow (`.github/workflows/release.yml`) automates releases. To create a release:
+```bash
+npm version patch  # or minor/major
+git push && git push --tags
+```
+This builds the plugin, runs tests, and creates a GitHub Release with `main.js`, `manifest.json`, and `styles.css`.
 
 ## Commands Available
 

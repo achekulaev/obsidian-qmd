@@ -29,6 +29,7 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	private lastCompletedQuery = "";
 	private lastResults: SearchResultItem[] = [];
 	private isSearching = false;
+	private searchId = 0;
 	private usedFallback = false;
 	private searchError: string | null = null;
 	private onSearchModeUsed: (mode: SearchMode, isFallback: boolean) => void;
@@ -37,8 +38,9 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	// Debounced search function
 	private debouncedSearch: (query: string) => void;
 	
-	// Progress bar element
+	// Progress bar and search mode indicator elements
 	private progressBar: HTMLElement | null = null;
+	private searchModeIndicator: HTMLElement | null = null;
 
 	constructor(
 		app: App,
@@ -65,10 +67,10 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 			{ command: "esc", purpose: "Close" },
 		]);
 
-		// Create debounced search - trailing edge (waits 500ms after last keystroke)
+		// Create debounced search - trailing edge (waits 1000ms after last keystroke)
 		this.debouncedSearch = debounce(
 			(query: string) => this.performSearch(query),
-			500,
+			1000,
 			false
 		);
 	}
@@ -78,15 +80,21 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	 */
 	onOpen(): void {
 		super.onOpen();
-		this.injectProgressBar();
+		this.injectStatusElements();
+		const input = this.getInputElement();
+		if (input) {
+			input.maxLength = 50;
+		}
 	}
 
 	/**
-	 * Inject progress bar below the input field
+	 * Inject progress bar and search mode indicator below the input field
 	 */
-	private injectProgressBar(): void {
+	private injectStatusElements(): void {
 		const inputEl = this.containerEl.querySelector(".prompt-input-container");
-		if (inputEl && !this.progressBar) {
+		if (!inputEl) return;
+
+		if (!this.progressBar) {
 			this.progressBar = createDiv({ cls: "qmd-progress-container" });
 			this.progressBar.innerHTML = `
 				<div class="qmd-progress-bar">
@@ -96,6 +104,12 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 			`;
 			this.progressBar.style.display = "none";
 			inputEl.insertAdjacentElement("afterend", this.progressBar);
+		}
+
+		if (!this.searchModeIndicator) {
+			this.searchModeIndicator = createDiv({ cls: "qmd-search-mode-indicator" });
+			this.searchModeIndicator.style.display = "none";
+			inputEl.appendChild(this.searchModeIndicator);
 		}
 	}
 
@@ -118,6 +132,34 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	}
 
 	/**
+	 * Update search mode indicator pill inside the input field
+	 */
+	private updateSearchModeIndicator(mode: SearchMode, isFallback: boolean): void {
+		if (!this.searchModeIndicator) return;
+		const label = isFallback ? "keyword (fallback)" : mode;
+		this.searchModeIndicator.textContent = label;
+		this.searchModeIndicator.style.display = "block";
+
+		const input = this.getInputElement();
+		if (input) {
+			input.style.paddingRight = `${this.searchModeIndicator.offsetWidth + 36}px`;
+		}
+	}
+
+	/**
+	 * Hide search mode indicator
+	 */
+	private hideSearchModeIndicator(): void {
+		if (this.searchModeIndicator) {
+			this.searchModeIndicator.style.display = "none";
+		}
+		const input = this.getInputElement();
+		if (input) {
+			input.style.paddingRight = "";
+		}
+	}
+
+	/**
 	 * Get suggestions based on query
 	 */
 	async getSuggestions(query: string): Promise<SearchResultItem[]> {
@@ -128,17 +170,18 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 			this.lastCompletedQuery = "";
 			this.lastResults = [];
 			this.hideProgressBar();
+			this.hideSearchModeIndicator();
 			return [];
 		}
 
-		// If user is typing a new query while searching, abort it
+		// If a search is running, abort it and invalidate its searchId
 		if (this.isSearching) {
 			this.qmd.abortSearch();
-			this.hideProgressBar();
+			this.searchId++;
 		}
 
-		// Only trigger search if this is a new query we haven't completed yet
-		if (query !== this.lastCompletedQuery && !this.isSearching) {
+		// Schedule a new search for queries we haven't completed yet
+		if (query !== this.lastCompletedQuery) {
 			this.debouncedSearch(query);
 		}
 
@@ -162,9 +205,9 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	 * Perform the actual search
 	 */
 	private async performSearch(query: string): Promise<void> {
-		if (this.isSearching) return;
 		if (query !== this.currentQuery) return; // Query changed, skip
 
+		const thisSearchId = ++this.searchId;
 		this.isSearching = true;
 		this.usedFallback = false;
 		this.searchError = null;
@@ -177,6 +220,7 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 			if (searchMode === "semantic") {
 				// Try semantic search first
 				const semanticResult = await this.qmd.semanticSearch(query);
+				if (thisSearchId !== this.searchId) return;
 
 				if (semanticResult.success && semanticResult.data) {
 					if (semanticResult.data.length > 0 || !this.settings.fallbackOnZeroResults) {
@@ -184,6 +228,7 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 					} else if (this.settings.fallbackOnZeroResults) {
 						// Zero results, try fallback
 						const fallbackResult = await this.qmd.keywordSearch(query);
+						if (thisSearchId !== this.searchId) return;
 						if (fallbackResult.success && fallbackResult.data) {
 							results = this.mapResults(fallbackResult.data, "keyword", true);
 							this.usedFallback = true;
@@ -192,18 +237,12 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 					}
 				} else if (this.settings.fallbackOnSemanticFailure) {
 					// Semantic search failed, try fallback
-					const qmdError = new QMDError(
-						semanticResult.error || "Unknown error",
-						"unknown"
-					);
-					
-					// Check if it's a no-embeddings error
-					if (qmdError.message.includes("embeddings") || 
-						semanticResult.error?.includes("embeddings")) {
+					if (semanticResult.error?.includes("embeddings")) {
 						this.showEmbeddingsNotice();
 					}
 
 					const fallbackResult = await this.qmd.keywordSearch(query);
+					if (thisSearchId !== this.searchId) return;
 					if (fallbackResult.success && fallbackResult.data) {
 						results = this.mapResults(fallbackResult.data, "keyword", true);
 						this.usedFallback = true;
@@ -217,6 +256,7 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 			} else {
 				// Direct keyword search
 				const keywordResult = await this.qmd.keywordSearch(query);
+				if (thisSearchId !== this.searchId) return;
 				if (keywordResult.success && keywordResult.data) {
 					results = this.mapResults(keywordResult.data, "keyword", false);
 				} else {
@@ -225,14 +265,16 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 				}
 			}
 
-			// Check if query changed during search - if so, discard results
-			if (query !== this.currentQuery) {
-				return;
-			}
-
-			// Update results
+			// Update results and clean up state before re-render
 			this.lastResults = results;
 			this.lastCompletedQuery = query;
+			this.isSearching = false;
+			this.hideProgressBar();
+			if (results.length > 0) {
+				this.updateSearchModeIndicator(searchMode, this.usedFallback);
+			} else {
+				this.hideSearchModeIndicator();
+			}
 			this.onSearchModeUsed(searchMode, this.usedFallback);
 
 			// Trigger re-render by updating input (hack for SuggestModal)
@@ -242,10 +284,10 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 				// Find the suggestions container and save scroll position
 				const suggestContainer = this.containerEl.querySelector(".suggestion-container");
 				const scrollTop = suggestContainer?.scrollTop || 0;
-				
+
 				// Force update by dispatching input event
 				inputElement.dispatchEvent(new Event("input"));
-				
+
 				// Restore scroll position after a microtask (after render)
 				if (suggestContainer && scrollTop > 0) {
 					queueMicrotask(() => {
@@ -255,12 +297,16 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 			}
 
 		} catch (error) {
+			if (thisSearchId !== this.searchId) return;
 			const errorMessage = error instanceof Error ? error.message : "Unknown error";
 			this.searchError = errorMessage;
 			this.onError(errorMessage);
 		} finally {
-			this.isSearching = false;
-			this.hideProgressBar();
+			// Fallback cleanup for error/cancellation paths
+			if (thisSearchId === this.searchId) {
+				this.isSearching = false;
+				this.hideProgressBar();
+			}
 		}
 	}
 
@@ -355,41 +401,25 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 
 		// Title row
 		const titleRow = container.createDiv({ cls: "qmd-search-result-title" });
-		titleRow.createSpan({ 
-			text: result.title || result.path.split("/").pop() || result.path,
+		titleRow.createSpan({
+			text: result.title || result.path.replace(/\.md$/i, "").split("/").pop() || result.path,
 			cls: isError ? "qmd-search-error-title" : "qmd-search-result-name"
 		});
 
-		// Path (if different from title) - skip for error items
-		if (result.title && result.path && !isError) {
-			container.createDiv({ 
-				text: result.path,
-				cls: "qmd-search-result-path"
-			});
-		}
-
 		// Snippet
 		if (result.snippet) {
-			container.createDiv({ 
+			container.createDiv({
 				text: result.snippet,
 				cls: isError ? "qmd-search-error-hint" : "qmd-search-result-snippet"
 			});
 		}
 
-		// Score and mode indicator - skip for error items
-		if (!isError) {
+		// Score - skip for error items
+		if (!isError && this.settings.showScoresInResults) {
 			const metaRow = container.createDiv({ cls: "qmd-search-result-meta" });
-			
-			if (this.settings.showScoresInResults) {
-				metaRow.createSpan({ 
-					text: `Score: ${result.score.toFixed(3)}`,
-					cls: "qmd-search-result-score"
-				});
-			}
-
-			metaRow.createSpan({ 
-				text: result.isFallback ? "keyword (fallback)" : result.searchMode,
-				cls: `qmd-search-result-mode qmd-mode-${result.searchMode}`
+			metaRow.createSpan({
+				text: `Score: ${result.score.toFixed(3)}`,
+				cls: "qmd-search-result-score"
 			});
 		}
 	}
@@ -430,12 +460,6 @@ export const SEARCH_MODAL_STYLES = `
 	color: var(--text-normal);
 }
 
-.qmd-search-result-path {
-	font-size: 0.85em;
-	color: var(--text-muted);
-	margin-bottom: 4px;
-}
-
 .qmd-search-result-snippet {
 	font-size: 0.9em;
 	color: var(--text-muted);
@@ -452,18 +476,19 @@ export const SEARCH_MODAL_STYLES = `
 	color: var(--text-faint);
 }
 
-.qmd-search-result-mode {
-	padding: 1px 6px;
-	border-radius: 3px;
-	background: var(--background-modifier-hover);
-}
-
-.qmd-mode-semantic {
-	color: var(--text-accent);
-}
-
-.qmd-mode-keyword {
-	color: var(--text-muted);
+/* Search mode pill inside input field */
+.qmd-search-mode-indicator {
+	position: absolute;
+	right: 44px;
+	top: 50%;
+	transform: translateY(-50%);
+	padding: 2px 8px;
+	font-size: 0.75em;
+	color: rgba(255, 255, 255, 0.85);
+	background: rgba(var(--interactive-accent-rgb, 124, 77, 255), 0.5);
+	border-radius: 10px;
+	pointer-events: none;
+	white-space: nowrap;
 }
 
 /* Error display styles */
@@ -513,7 +538,7 @@ export const SEARCH_MODAL_STYLES = `
 
 @keyframes qmd-progress-slide {
 	0% { transform: translateX(-100%); }
-	50% { transform: translateX(200%); }
+	50% { transform: translateX(333%); }
 	100% { transform: translateX(-100%); }
 }
 

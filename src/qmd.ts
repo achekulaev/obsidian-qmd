@@ -455,11 +455,17 @@ export class QMDWrapper {
 				}
 			}
 
+			// Strip diff hunk headers from snippets (e.g. "@@ -1,1 @@ (0 before, 0 after)")
+			let snippet = raw.snippet;
+			if (snippet) {
+				snippet = snippet.replace(/@@ -\d+,\d+ @@\s*\(\d+ before, \d+ after\)\s*/g, "").trim();
+			}
+
 			return {
 				path,
 				score: raw.score,
 				title: raw.title,
-				snippet: raw.snippet,
+				snippet,
 				docid: raw.docid,
 			};
 		});

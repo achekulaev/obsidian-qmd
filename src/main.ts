@@ -47,6 +47,7 @@ export default class QMDPlugin extends Plugin {
 
 	// Debounced index update
 	private debouncedUpdate: (() => void) | null = null;
+	private hasPendingChanges = false;
 
 	constructor(app: App, manifest: PluginManifest) {
 		super(app, manifest);
@@ -279,37 +280,17 @@ export default class QMDPlugin extends Plugin {
 		);
 
 		// Watch for file changes
-		this.registerEvent(
-			this.app.vault.on("create", (file: TAbstractFile) => {
-				if (file instanceof TFile && file.extension === "md") {
-					this.debouncedUpdate?.();
-				}
-			})
-		);
+		const onFileChange = (file: TAbstractFile) => {
+			if (file instanceof TFile && file.extension === "md") {
+				this.hasPendingChanges = true;
+				this.debouncedUpdate?.();
+			}
+		};
 
-		this.registerEvent(
-			this.app.vault.on("modify", (file: TAbstractFile) => {
-				if (file instanceof TFile && file.extension === "md") {
-					this.debouncedUpdate?.();
-				}
-			})
-		);
-
-		this.registerEvent(
-			this.app.vault.on("delete", (file: TAbstractFile) => {
-				if (file instanceof TFile && file.extension === "md") {
-					this.debouncedUpdate?.();
-				}
-			})
-		);
-
-		this.registerEvent(
-			this.app.vault.on("rename", (file: TAbstractFile, _oldPath: string) => {
-				if (file instanceof TFile && file.extension === "md") {
-					this.debouncedUpdate?.();
-				}
-			})
-		);
+		this.registerEvent(this.app.vault.on("create", onFileChange));
+		this.registerEvent(this.app.vault.on("modify", onFileChange));
+		this.registerEvent(this.app.vault.on("delete", onFileChange));
+		this.registerEvent(this.app.vault.on("rename", onFileChange));
 	}
 
 	/**
@@ -332,15 +313,27 @@ export default class QMDPlugin extends Plugin {
 	}
 
 	/**
-	 * Trigger index update (internal, doesn't show status)
+	 * Trigger index update and embedding generation (internal, doesn't show status)
 	 */
 	private async triggerIndexUpdate(): Promise<void> {
 		if (!this.qmd) return;
+		if (!this.hasPendingChanges) return;
+
+		this.hasPendingChanges = false;
 
 		const result = await this.qmd.updateIndex();
 		if (result.success) {
 			this.settings.lastIndexUpdateTime = new Date().toISOString();
 			await this.saveSettings();
+
+			// Also generate embeddings for new/changed files
+			const embedResult = await this.qmd.generateEmbeddings(false);
+			if (embedResult.success) {
+				this.settings.lastEmbeddingRunTime = new Date().toISOString();
+				await this.saveSettings();
+			} else if (embedResult.error) {
+				this.recordError(embedResult.error);
+			}
 		} else if (result.error) {
 			this.recordError(result.error);
 		}
