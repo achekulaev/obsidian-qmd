@@ -1,13 +1,14 @@
 # QMD Semantic Search for Obsidian
 
-A **semantic-first** search plugin for Obsidian that integrates [QMD (Quick Markdown Search)](https://github.com/tobi/qmd) to provide AI-powered vector search across your vault.
+A **fully local, privacy-first** semantic search plugin for Obsidian. Powered by [QMD (Quick Markdown Search)](https://github.com/tobi/qmd), it brings AI-powered vector search to your vault without sending a single byte to any cloud service, API, or remote LLM. All embedding generation and search runs entirely on your machine.
 
 ## Features
 
+- **100% Local** - No API keys, no cloud services, no remote LLMs. Your notes never leave your machine
 - **Semantic Search** - Find notes by meaning, not just keywords. Ask questions like "notes about productivity" or "ideas related to machine learning"
 - **Automatic Fallback** - Gracefully falls back to keyword (BM25) search when semantic search is unavailable
-- **Automatic Indexing** - Keeps your vault indexed in the background with debounced updates
-- **Responsive Search** - 500ms debounce waits for you to stop typing, with animated progress indicator
+- **Automatic Indexing & Embedding** - Keeps your vault indexed and embedded in the background as you create and edit notes
+- **Responsive Search** - 1-second debounce waits for you to stop typing, with animated progress indicator
 - **Cancellable** - Typing while searching cancels the previous search immediately
 - **Native UX** - Search modal and optional sidebar pane follow Obsidian design patterns
 - **Desktop Only** - Requires filesystem access (macOS, Windows, Linux)
@@ -140,7 +141,7 @@ This plugin prioritizes semantic (AI/vector) search over traditional keyword sea
 2. **Fallback:** Keyword (BM25) search using `qmd search`
 
 When you search:
-1. The plugin waits 500ms after you stop typing (debounce)
+1. The plugin waits 1 second after you stop typing (debounce)
 2. An animated progress bar appears below the search input
 3. Semantic search is attempted first
 4. If semantic search fails (no embeddings, error, or optionally zero results), it falls back to keyword search
@@ -173,7 +174,7 @@ Access settings via Obsidian Settings → QMD Semantic Search
 | Setting | Description | Default |
 |---------|-------------|---------|
 | Debounce Delay | Wait time after changes before indexing | 45 seconds |
-| Periodic Updates | Enable timed index updates | Off |
+| Periodic Updates | Enable timed index updates | On |
 | Update Interval | Minutes between periodic updates | 15 |
 
 ### Search Behavior
@@ -192,7 +193,7 @@ Access settings via Obsidian Settings → QMD Semantic Search
 |---------|-------------|---------|
 | Ribbon Icon | Show search icon in sidebar | On |
 | Search Pane | Enable persistent sidebar pane | Off |
-| Show Scores | Display relevance scores | Off |
+| Show Scores | Display relevance scores | On |
 
 ## Commands
 
