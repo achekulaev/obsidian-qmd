@@ -1,6 +1,6 @@
 {
 	"name": "qmd-search",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "Semantic-first search for Obsidian using QMD",
 	"main": "main.js",
 	"scripts": {
