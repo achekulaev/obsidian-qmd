@@ -1,0 +1,10 @@
+{
+	"id": "obsidian-qmd",
+	"name": "QMD Semantic Search",
+	"version": "1.0.0",
+	"minAppVersion": "1.11.0",
+	"description": "Semantic-first search for your vault using QMD (Quick Markdown Search). Provides vector-based semantic search with keyword fallback.",
+	"author": "Oleksii Chekulaiev",
+	"authorUrl": "https://github.com/achekulaev",
+	"isDesktopOnly": true
+}
