@@ -25,10 +25,8 @@ export class QMDSettingTab extends PluginSettingTab {
 		const { containerEl } = this;
 		containerEl.empty();
 
-		containerEl.createEl("h1", { text: "QMD Semantic Search" });
-
 		// --- Core / External Tool ---
-		containerEl.createEl("h2", { text: "QMD Configuration" });
+		new Setting(containerEl).setName("QMD configuration").setHeading();
 
 		new Setting(containerEl)
 			.setName("QMD binary path")
@@ -115,7 +113,7 @@ export class QMDSettingTab extends PluginSettingTab {
 			);
 
 		// --- Indexing & Updates ---
-		containerEl.createEl("h2", { text: "Indexing & Updates" });
+		new Setting(containerEl).setName("Indexing & updates").setHeading();
 
 		new Setting(containerEl)
 			.setName("Debounce delay (ms)")
@@ -160,7 +158,7 @@ export class QMDSettingTab extends PluginSettingTab {
 			);
 
 		// --- Semantic Search Behavior ---
-		containerEl.createEl("h2", { text: "Search Behavior" });
+		new Setting(containerEl).setName("Search behavior").setHeading();
 
 		new Setting(containerEl)
 			.setName("Default search mode")
@@ -225,7 +223,7 @@ export class QMDSettingTab extends PluginSettingTab {
 			);
 
 		// --- UI & UX ---
-		containerEl.createEl("h2", { text: "User Interface" });
+		new Setting(containerEl).setName("User interface").setHeading();
 
 		new Setting(containerEl)
 			.setName("Show ribbon icon")
@@ -265,14 +263,14 @@ export class QMDSettingTab extends PluginSettingTab {
 			);
 
 		// --- Diagnostics ---
-		containerEl.createEl("h2", { text: "Diagnostics" });
+		new Setting(containerEl).setName("Diagnostics").setHeading();
 
 		const diagnosticsContainer = containerEl.createDiv({ cls: "qmd-diagnostics" });
 		
 		this.renderDiagnostics(diagnosticsContainer);
 
 		// Actions
-		containerEl.createEl("h2", { text: "Actions" });
+		new Setting(containerEl).setName("Actions").setHeading();
 
 		new Setting(containerEl)
 			.setName("Update index now")

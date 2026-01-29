@@ -14,7 +14,7 @@ describe("DEFAULT_SETTINGS", () => {
 
 	it("should have correct default values for indexing settings", () => {
 		expect(DEFAULT_SETTINGS.debounceMs).toBe(45000);
-		expect(DEFAULT_SETTINGS.enablePeriodicUpdates).toBe(false);
+		expect(DEFAULT_SETTINGS.enablePeriodicUpdates).toBe(true);
 		expect(DEFAULT_SETTINGS.periodicUpdateMinutes).toBe(15);
 	});
 
@@ -28,7 +28,7 @@ describe("DEFAULT_SETTINGS", () => {
 	it("should have correct default values for UI settings", () => {
 		expect(DEFAULT_SETTINGS.enableRibbonIcon).toBe(true);
 		expect(DEFAULT_SETTINGS.enableSearchPane).toBe(false);
-		expect(DEFAULT_SETTINGS.showScoresInResults).toBe(false);
+		expect(DEFAULT_SETTINGS.showScoresInResults).toBe(true);
 	});
 
 	it("should have null diagnostics by default", () => {

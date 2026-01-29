@@ -46,7 +46,7 @@ export const DEFAULT_SETTINGS: QMDPluginSettings = {
 
 	// Indexing & Updates
 	debounceMs: 45000,
-	enablePeriodicUpdates: false,
+	enablePeriodicUpdates: true,
 	periodicUpdateMinutes: 15,
 
 	// Semantic Search Behavior
@@ -59,7 +59,7 @@ export const DEFAULT_SETTINGS: QMDPluginSettings = {
 	// UI & UX
 	enableRibbonIcon: true,
 	enableSearchPane: false,
-	showScoresInResults: false,
+	showScoresInResults: true,
 
 	// Diagnostics
 	lastIndexUpdateTime: null,

@@ -12,7 +12,7 @@ import {
 	TFile,
 	debounce,
 } from "obsidian";
-import { QMDWrapper, QMDSearchResult, QMDError } from "./qmd";
+import { QMDWrapper, QMDSearchResult } from "./qmd";
 import { QMDPluginSettings, SearchMode } from "./settings";
 
 export interface SearchResultItem extends QMDSearchResult {
@@ -95,20 +95,15 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 		if (!inputEl) return;
 
 		if (!this.progressBar) {
-			this.progressBar = createDiv({ cls: "qmd-progress-container" });
-			this.progressBar.innerHTML = `
-				<div class="qmd-progress-bar">
-					<div class="qmd-progress-bar-fill"></div>
-				</div>
-				<span class="qmd-progress-text">Searching...</span>
-			`;
-			this.progressBar.style.display = "none";
+			this.progressBar = createDiv({ cls: "qmd-progress-container qmd-hidden" });
+			const bar = this.progressBar.createDiv({ cls: "qmd-progress-bar" });
+			bar.createDiv({ cls: "qmd-progress-bar-fill" });
+			this.progressBar.createSpan({ cls: "qmd-progress-text", text: "Searching..." });
 			inputEl.insertAdjacentElement("afterend", this.progressBar);
 		}
 
 		if (!this.searchModeIndicator) {
-			this.searchModeIndicator = createDiv({ cls: "qmd-search-mode-indicator" });
-			this.searchModeIndicator.style.display = "none";
+			this.searchModeIndicator = createDiv({ cls: "qmd-search-mode-indicator qmd-hidden" });
 			inputEl.appendChild(this.searchModeIndicator);
 		}
 	}
@@ -117,18 +112,14 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	 * Show progress bar
 	 */
 	private showProgressBar(): void {
-		if (this.progressBar) {
-			this.progressBar.style.display = "flex";
-		}
+		this.progressBar?.removeClass("qmd-hidden");
 	}
 
 	/**
 	 * Hide progress bar
 	 */
 	private hideProgressBar(): void {
-		if (this.progressBar) {
-			this.progressBar.style.display = "none";
-		}
+		this.progressBar?.addClass("qmd-hidden");
 	}
 
 	/**
@@ -138,11 +129,11 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 		if (!this.searchModeIndicator) return;
 		const label = isFallback ? "keyword (fallback)" : mode;
 		this.searchModeIndicator.textContent = label;
-		this.searchModeIndicator.style.display = "block";
+		this.searchModeIndicator.removeClass("qmd-hidden");
 
 		const input = this.getInputElement();
 		if (input) {
-			input.style.paddingRight = `${this.searchModeIndicator.offsetWidth + 36}px`;
+			input.addClass("qmd-input-with-pill");
 		}
 	}
 
@@ -150,12 +141,10 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	 * Hide search mode indicator
 	 */
 	private hideSearchModeIndicator(): void {
-		if (this.searchModeIndicator) {
-			this.searchModeIndicator.style.display = "none";
-		}
+		this.searchModeIndicator?.addClass("qmd-hidden");
 		const input = this.getInputElement();
 		if (input) {
-			input.style.paddingRight = "";
+			input.removeClass("qmd-input-with-pill");
 		}
 	}
 
@@ -399,27 +388,25 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 			cls: isError ? "qmd-search-error" : "qmd-search-result" 
 		});
 
-		// Title row
+		// Title row with inline score
 		const titleRow = container.createDiv({ cls: "qmd-search-result-title" });
 		titleRow.createSpan({
 			text: result.title || result.path.replace(/\.md$/i, "").split("/").pop() || result.path,
 			cls: isError ? "qmd-search-error-title" : "qmd-search-result-name"
 		});
+		if (!isError && this.settings.showScoresInResults) {
+			const pct = Math.round(result.score * 100);
+			titleRow.createSpan({
+				text: ` (Score: ${pct}%)`,
+				cls: "qmd-search-result-score"
+			});
+		}
 
 		// Snippet
 		if (result.snippet) {
 			container.createDiv({
 				text: result.snippet,
 				cls: isError ? "qmd-search-error-hint" : "qmd-search-result-snippet"
-			});
-		}
-
-		// Score - skip for error items
-		if (!isError && this.settings.showScoresInResults) {
-			const metaRow = container.createDiv({ cls: "qmd-search-result-meta" });
-			metaRow.createSpan({
-				text: `Score: ${result.score.toFixed(3)}`,
-				cls: "qmd-search-result-score"
 			});
 		}
 	}
@@ -447,6 +434,14 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
  * CSS styles for the search modal
  */
 export const SEARCH_MODAL_STYLES = `
+.qmd-hidden {
+	display: none !important;
+}
+
+.qmd-input-with-pill {
+	padding-right: 120px !important;
+}
+
 .qmd-search-result {
 	padding: 8px 12px;
 }
@@ -469,10 +464,15 @@ export const SEARCH_MODAL_STYLES = `
 	white-space: nowrap;
 }
 
-.qmd-search-result-meta {
+.qmd-search-result-title {
 	display: flex;
-	gap: 12px;
-	font-size: 0.8em;
+	align-items: baseline;
+}
+
+.qmd-search-result-score {
+	font-weight: normal;
+	font-style: italic;
+	font-size: 0.75em;
 	color: var(--text-faint);
 }
 

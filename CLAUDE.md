@@ -2,6 +2,10 @@
 
 This file provides context for AI assistants working on this project.
 
+## Rules
+
+- Always run `npm run build && npm test && npm run lint` before committing code changes, unless the build/test/lint was already run and passed in the current session with no code changes since.
+
 ## Project Overview
 
 **obsidian-qmd** is an Obsidian plugin that integrates [QMD (Quick Markdown Search)](https://github.com/tobi/qmd) to provide semantic-first search in Obsidian vaults. It's a desktop-only plugin that uses QMD's vector search (semantic) as the default, with keyword (BM25) search as a fallback.

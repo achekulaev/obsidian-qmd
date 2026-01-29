@@ -108,9 +108,6 @@ export default class QMDPlugin extends Plugin {
 		if (this.styleEl) {
 			this.styleEl.remove();
 		}
-
-		// Detach search pane views
-		this.app.workspace.detachLeavesOfType(QMD_SEARCH_VIEW_TYPE);
 	}
 
 	/**
@@ -144,7 +141,6 @@ export default class QMDPlugin extends Plugin {
 			if (path === "qmd") continue; // Skip bare "qmd", check it last via wrapper
 			try {
 				if (existsSync(path)) {
-					console.log(`QMD: Found binary at ${path}`);
 					return path;
 				}
 			} catch {
