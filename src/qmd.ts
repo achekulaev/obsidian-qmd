@@ -153,18 +153,18 @@ export class QMDWrapper {
 	private async queueCommand<T>(
 		executor: () => Promise<T>
 	): Promise<T> {
-		return new Promise((resolve, reject) => {
+		return new Promise<T>((resolve, reject) => {
 			const task = async () => {
 				try {
 					const result = await executor();
 					resolve(result);
 				} catch (error) {
-					reject(error);
+					reject(error instanceof Error ? error : new Error(String(error)));
 				}
 			};
 
 			this.commandQueue.push(task);
-			this.processQueue();
+			void this.processQueue();
 		});
 	}
 

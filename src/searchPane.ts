@@ -53,7 +53,7 @@ export class QMDSearchPane extends ItemView {
 		this.onError = callbacks.onError;
 
 		this.debouncedSearch = debounce(
-			(query: string) => this.performSearch(query),
+			(query: string) => { void this.performSearch(query); },
 			300,
 			true
 		);
@@ -64,7 +64,7 @@ export class QMDSearchPane extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "QMD Search";
+		return "QMD search";
 	}
 
 	getIcon(): string {
@@ -72,6 +72,7 @@ export class QMDSearchPane extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
+		await super.onOpen();
 		const container = this.containerEl.children[1];
 		container.empty();
 		container.addClass("qmd-search-pane");
@@ -101,7 +102,7 @@ export class QMDSearchPane extends ItemView {
 
 		input.addEventListener("keydown", (e) => {
 			if (e.key === "Enter" && this.currentQuery.trim().length >= 2) {
-				this.performSearch(this.currentQuery);
+				void this.performSearch(this.currentQuery);
 			}
 		});
 
@@ -200,7 +201,7 @@ export class QMDSearchPane extends ItemView {
 	private showEmbeddingsNotice(): void {
 		if (this.settings.showEmbeddingsBanner) {
 			new Notice(
-				"Semantic search requires embeddings. Run 'QMD: Generate Embeddings' to enable.",
+				"Semantic search requires embeddings. Run 'QMD: Generate embeddings' to enable.",
 				10000
 			);
 		}
@@ -317,131 +318,3 @@ export class QMDSearchPane extends ItemView {
 	}
 }
 
-/**
- * CSS styles for the search pane
- */
-export const SEARCH_PANE_STYLES = `
-.qmd-search-pane {
-	display: flex;
-	flex-direction: column;
-	height: 100%;
-	padding: 8px;
-}
-
-.qmd-search-input-container {
-	margin-bottom: 8px;
-}
-
-.qmd-search-input-wrapper {
-	display: flex;
-	align-items: center;
-	background: var(--background-modifier-form-field);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 4px;
-	padding: 4px 8px;
-}
-
-.qmd-search-icon {
-	color: var(--text-muted);
-	margin-right: 8px;
-}
-
-.qmd-search-input {
-	flex: 1;
-	border: none;
-	background: transparent;
-	outline: none;
-	color: var(--text-normal);
-}
-
-.qmd-search-status {
-	padding: 4px 8px;
-	font-size: 0.85em;
-	margin-bottom: 8px;
-	border-radius: 4px;
-}
-
-.qmd-status-loading {
-	color: var(--text-muted);
-	background: var(--background-modifier-hover);
-}
-
-.qmd-pane-loading-row {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.qmd-pane-spinner {
-	width: 12px;
-	height: 12px;
-	border: 2px solid var(--background-modifier-border);
-	border-top-color: var(--text-accent);
-	border-radius: 50%;
-	animation: qmd-pane-spin 0.8s linear infinite;
-}
-
-@keyframes qmd-pane-spin {
-	to { transform: rotate(360deg); }
-}
-
-.qmd-status-success {
-	color: var(--text-success);
-}
-
-.qmd-status-error {
-	color: var(--text-error);
-	background: var(--background-modifier-error);
-}
-
-.qmd-search-results {
-	flex: 1;
-	overflow-y: auto;
-}
-
-.qmd-search-result-item {
-	padding: 8px;
-	margin-bottom: 4px;
-	border-radius: 4px;
-	cursor: pointer;
-	background: var(--background-secondary);
-}
-
-.qmd-search-result-item:hover {
-	background: var(--background-modifier-hover);
-}
-
-.qmd-result-title {
-	font-weight: 500;
-	color: var(--text-normal);
-	margin-bottom: 2px;
-}
-
-.qmd-result-path {
-	font-size: 0.85em;
-	color: var(--text-muted);
-	margin-bottom: 4px;
-}
-
-.qmd-result-snippet {
-	font-size: 0.9em;
-	color: var(--text-muted);
-	margin-bottom: 4px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	display: -webkit-box;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
-}
-
-.qmd-result-score {
-	font-size: 0.8em;
-	color: var(--text-faint);
-}
-
-.qmd-search-no-results {
-	padding: 16px;
-	text-align: center;
-	color: var(--text-muted);
-}
-`;

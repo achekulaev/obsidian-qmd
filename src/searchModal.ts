@@ -151,7 +151,7 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	/**
 	 * Get suggestions based on query
 	 */
-	async getSuggestions(query: string): Promise<SearchResultItem[]> {
+	getSuggestions(query: string): SearchResultItem[] {
 		this.currentQuery = query;
 
 		if (!query || query.trim().length < 2) {
@@ -371,7 +371,7 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	private showEmbeddingsNotice(): void {
 		if (this.settings.showEmbeddingsBanner) {
 			new Notice(
-				"Semantic search requires embeddings. Run 'QMD: Generate Embeddings' to enable.",
+				"Semantic search requires embeddings. Run 'QMD: Generate embeddings' to enable.",
 				10000
 			);
 		}
@@ -430,121 +430,3 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	}
 }
 
-/**
- * CSS styles for the search modal
- */
-export const SEARCH_MODAL_STYLES = `
-.qmd-hidden {
-	display: none !important;
-}
-
-.qmd-input-with-pill {
-	padding-right: 120px !important;
-}
-
-.qmd-search-result {
-	padding: 8px 12px;
-}
-
-.qmd-search-result-title {
-	font-weight: 500;
-	margin-bottom: 2px;
-}
-
-.qmd-search-result-name {
-	color: var(--text-normal);
-}
-
-.qmd-search-result-snippet {
-	font-size: 0.9em;
-	color: var(--text-muted);
-	margin-bottom: 4px;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.qmd-search-result-title {
-	display: flex;
-	align-items: baseline;
-}
-
-.qmd-search-result-score {
-	font-weight: normal;
-	font-style: italic;
-	font-size: 0.75em;
-	color: var(--text-faint);
-}
-
-/* Search mode pill inside input field */
-.qmd-search-mode-indicator {
-	position: absolute;
-	right: 44px;
-	top: 50%;
-	transform: translateY(-50%);
-	padding: 2px 8px;
-	font-size: 0.75em;
-	color: rgba(255, 255, 255, 0.85);
-	background: rgba(var(--interactive-accent-rgb, 124, 77, 255), 0.5);
-	border-radius: 10px;
-	pointer-events: none;
-	white-space: nowrap;
-}
-
-/* Error display styles */
-.qmd-search-error {
-	padding: 12px;
-	background: var(--background-modifier-error);
-	border-radius: 4px;
-	cursor: default;
-}
-
-.qmd-search-error-title {
-	color: var(--text-error);
-	font-weight: 500;
-}
-
-.qmd-search-error-hint {
-	font-size: 0.9em;
-	color: var(--text-muted);
-	margin-top: 4px;
-}
-
-/* Progress bar below search input */
-.qmd-progress-container {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 6px 12px;
-	background: var(--background-secondary);
-	border-bottom: 1px solid var(--background-modifier-border);
-}
-
-.qmd-progress-bar {
-	flex: 1;
-	height: 3px;
-	background: var(--background-modifier-border);
-	border-radius: 2px;
-	overflow: hidden;
-}
-
-.qmd-progress-bar-fill {
-	height: 100%;
-	width: 30%;
-	background: var(--text-accent);
-	border-radius: 2px;
-	animation: qmd-progress-slide 1s ease-in-out infinite;
-}
-
-@keyframes qmd-progress-slide {
-	0% { transform: translateX(-100%); }
-	50% { transform: translateX(333%); }
-	100% { transform: translateX(-100%); }
-}
-
-.qmd-progress-text {
-	font-size: 0.8em;
-	color: var(--text-muted);
-	white-space: nowrap;
-}
-`;

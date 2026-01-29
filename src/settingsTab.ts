@@ -95,7 +95,7 @@ export class QMDSettingTab extends PluginSettingTab {
 						const result = await this.plugin.testQMDConnection();
 						
 						if (result.success) {
-							new Notice("✓ QMD is working correctly!");
+							new Notice("QMD is working correctly.");
 							if (result.data) {
 								new Notice(
 									`Collection: ${result.data.collection}\n` +
@@ -104,7 +104,7 @@ export class QMDSettingTab extends PluginSettingTab {
 								);
 							}
 						} else {
-							new Notice(`✗ QMD error: ${result.error}`, 10000);
+							new Notice(`QMD error: ${result.error}`, 10000);
 						}
 
 						button.setButtonText("Test QMD");
@@ -227,7 +227,7 @@ export class QMDSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Show ribbon icon")
-			.setDesc("Display QMD Search icon in the left sidebar.")
+			.setDesc("Display QMD search icon in the left sidebar.")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enableRibbonIcon)
@@ -240,7 +240,7 @@ export class QMDSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Enable search pane")
-			.setDesc("Allow opening QMD Search as a persistent sidebar pane.")
+			.setDesc("Allow opening QMD search as a persistent sidebar pane.")
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.enableSearchPane)
@@ -277,12 +277,12 @@ export class QMDSettingTab extends PluginSettingTab {
 			.setDesc("Manually trigger an index update.")
 			.addButton((button) =>
 				button
-					.setButtonText("Update Index")
+					.setButtonText("Update index")
 					.onClick(async () => {
 						button.setButtonText("Updating...");
 						button.setDisabled(true);
 						await this.plugin.updateIndexNow();
-						button.setButtonText("Update Index");
+						button.setButtonText("Update index");
 						button.setDisabled(false);
 					})
 			);
@@ -292,12 +292,12 @@ export class QMDSettingTab extends PluginSettingTab {
 			.setDesc("Build AI embeddings for semantic search. This may take a while for large vaults.")
 			.addButton((button) =>
 				button
-					.setButtonText("Generate Embeddings")
+					.setButtonText("Generate embeddings")
 					.onClick(async () => {
 						button.setButtonText("Generating...");
 						button.setDisabled(true);
 						await this.plugin.generateEmbeddings(false);
-						button.setButtonText("Generate Embeddings");
+						button.setButtonText("Generate embeddings");
 						button.setDisabled(false);
 					})
 			);
@@ -307,13 +307,13 @@ export class QMDSettingTab extends PluginSettingTab {
 			.setDesc("Rebuild all embeddings from scratch. Use if embeddings seem corrupted.")
 			.addButton((button) =>
 				button
-					.setButtonText("Force Rebuild")
+					.setButtonText("Force rebuild")
 					.setWarning()
 					.onClick(async () => {
 						button.setButtonText("Rebuilding...");
 						button.setDisabled(true);
 						await this.plugin.generateEmbeddings(true);
-						button.setButtonText("Force Rebuild");
+						button.setButtonText("Force rebuild");
 						button.setDisabled(false);
 					})
 			);
@@ -323,12 +323,12 @@ export class QMDSettingTab extends PluginSettingTab {
 			.setDesc("Create the QMD collection if it doesn't exist.")
 			.addButton((button) =>
 				button
-					.setButtonText("Ensure Collection")
+					.setButtonText("Ensure collection")
 					.onClick(async () => {
 						button.setButtonText("Checking...");
 						button.setDisabled(true);
 						await this.plugin.ensureCollection();
-						button.setButtonText("Ensure Collection");
+						button.setButtonText("Ensure collection");
 						button.setDisabled(false);
 					})
 			);
@@ -354,31 +354,3 @@ export class QMDSettingTab extends PluginSettingTab {
 	}
 }
 
-/**
- * CSS styles for the settings tab
- */
-export const SETTINGS_TAB_STYLES = `
-.qmd-diagnostics {
-	padding: 12px;
-	background: var(--background-secondary);
-	border-radius: 4px;
-	margin-bottom: 16px;
-}
-
-.qmd-diagnostic-row {
-	display: flex;
-	justify-content: space-between;
-	padding: 4px 0;
-}
-
-.qmd-diagnostic-label {
-	font-weight: 500;
-	color: var(--text-muted);
-}
-
-.qmd-diagnostic-value {
-	color: var(--text-normal);
-	font-family: var(--font-monospace);
-	font-size: 0.9em;
-}
-`;

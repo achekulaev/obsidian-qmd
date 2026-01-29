@@ -1,6 +1,6 @@
 /**
  * QMD Semantic Search Plugin
- * 
+ *
  * Main entry point for the Obsidian plugin.
  * Integrates QMD (Quick Markdown Search) for semantic-first search in Obsidian.
  */
@@ -23,9 +23,9 @@ import {
 } from "./settings";
 
 import { QMDWrapper, QMDCommandResult, QMDStatusResult } from "./qmd";
-import { QMDSearchModal, SEARCH_MODAL_STYLES, SearchResultItem } from "./searchModal";
-import { QMDSearchPane, QMD_SEARCH_VIEW_TYPE, SEARCH_PANE_STYLES } from "./searchPane";
-import { QMDSettingTab, SETTINGS_TAB_STYLES } from "./settingsTab";
+import { QMDSearchModal, SearchResultItem } from "./searchModal";
+import { QMDSearchPane, QMD_SEARCH_VIEW_TYPE } from "./searchPane";
+import { QMDSettingTab } from "./settingsTab";
 import { existsSync } from "fs";
 import { homedir } from "os";
 
@@ -43,7 +43,6 @@ export default class QMDPlugin extends Plugin {
 	private qmd: QMDWrapper | null = null;
 	private ribbonIcon: HTMLElement | null = null;
 	private periodicUpdateInterval: number | null = null;
-	private styleEl: HTMLStyleElement | null = null;
 
 	// Debounced index update
 	private debouncedUpdate: (() => void) | null = null;
@@ -59,23 +58,20 @@ export default class QMDPlugin extends Plugin {
 
 		// Check for desktop environment
 		if (!this.isDesktop()) {
-			new Notice("QMD requires desktop filesystem access. Plugin disabled on mobile.");
+			new Notice("QMD requires desktop filesystem access — plugin disabled on mobile.");
 			return;
 		}
 
 		// Initialize QMD wrapper
 		this.initializeQMD();
 
-		// Inject styles
-		this.injectStyles();
-
 		// Register view for search pane
 		this.registerView(
 			QMD_SEARCH_VIEW_TYPE,
 			(leaf) => new QMDSearchPane(leaf, this.qmd!, this.settings, {
-				onResultSelect: (result) => this.openSearchResult(result),
-				onSearchModeUsed: (mode, isFallback) => this.recordSearchMode(mode, isFallback),
-				onError: (error) => this.recordError(error),
+				onResultSelect: (result) => { void this.openSearchResult(result); },
+				onSearchModeUsed: (mode, isFallback) => { void this.recordSearchMode(mode, isFallback); },
+				onError: (error) => { void this.recordError(error); },
 			})
 		);
 
@@ -95,18 +91,13 @@ export default class QMDPlugin extends Plugin {
 		this.addSettingTab(new QMDSettingTab(this.app, this));
 
 		// On first load, ensure collection exists
-		this.ensureCollectionOnLoad();
+		void this.ensureCollectionOnLoad();
 	}
 
-	async onunload(): Promise<void> {
+	onunload(): void {
 		// Clear periodic update interval
 		if (this.periodicUpdateInterval !== null) {
 			window.clearInterval(this.periodicUpdateInterval);
-		}
-
-		// Remove styles
-		if (this.styleEl) {
-			this.styleEl.remove();
 		}
 	}
 
@@ -157,15 +148,15 @@ export default class QMDPlugin extends Plugin {
 	 */
 	private initializeQMD(): void {
 		const vaultPath = this.getVaultPath();
-		const collectionName = this.settings.collectionName || 
+		const collectionName = this.settings.collectionName ||
 			deriveCollectionName(this.app.vault.getName());
 
 		const binaryPath = this.findQMDBinary();
-		
+
 		// Update settings if we found a different path
 		if (binaryPath !== this.settings.qmdBinaryPath) {
 			this.settings.qmdBinaryPath = binaryPath;
-			this.saveSettings();
+			void this.saveSettings();
 		}
 
 		this.qmd = new QMDWrapper(
@@ -177,40 +168,26 @@ export default class QMDPlugin extends Plugin {
 	}
 
 	/**
-	 * Inject CSS styles
-	 */
-	private injectStyles(): void {
-		this.styleEl = document.createElement("style");
-		this.styleEl.id = "qmd-plugin-styles";
-		this.styleEl.textContent = [
-			SEARCH_MODAL_STYLES,
-			SEARCH_PANE_STYLES,
-			SETTINGS_TAB_STYLES,
-		].join("\n");
-		document.head.appendChild(this.styleEl);
-	}
-
-	/**
 	 * Register plugin commands
 	 */
 	private registerCommands(): void {
 		// Main search command
 		this.addCommand({
-			id: "qmd-search",
+			id: "search",
 			name: "Search",
 			callback: () => this.openSearchModal(),
 		});
 
 		// Open search pane
 		this.addCommand({
-			id: "qmd-open-search-pane",
-			name: "Open Search Pane",
+			id: "open-search-pane",
+			name: "Open search pane",
 			checkCallback: (checking) => {
 				if (!this.settings.enableSearchPane) {
 					return false;
 				}
 				if (!checking) {
-					this.openSearchPane();
+					void this.openSearchPane();
 				}
 				return true;
 			},
@@ -218,30 +195,30 @@ export default class QMDPlugin extends Plugin {
 
 		// Update index
 		this.addCommand({
-			id: "qmd-update-index",
-			name: "Update Index Now",
-			callback: () => this.updateIndexNow(),
+			id: "update-index",
+			name: "Update index now",
+			callback: () => { void this.updateIndexNow(); },
 		});
 
 		// Generate embeddings
 		this.addCommand({
-			id: "qmd-generate-embeddings",
-			name: "Generate Embeddings",
-			callback: () => this.generateEmbeddings(false),
+			id: "generate-embeddings",
+			name: "Generate embeddings",
+			callback: () => { void this.generateEmbeddings(false); },
 		});
 
 		// Force rebuild embeddings
 		this.addCommand({
-			id: "qmd-force-rebuild-embeddings",
-			name: "Force Rebuild Embeddings",
-			callback: () => this.generateEmbeddings(true),
+			id: "force-rebuild-embeddings",
+			name: "Force rebuild embeddings",
+			callback: () => { void this.generateEmbeddings(true); },
 		});
 
 		// Ensure collection
 		this.addCommand({
-			id: "qmd-ensure-collection",
-			name: "Ensure Collection",
-			callback: () => this.ensureCollection(),
+			id: "ensure-collection",
+			name: "Ensure collection",
+			callback: () => { void this.ensureCollection(); },
 		});
 	}
 
@@ -258,7 +235,7 @@ export default class QMDPlugin extends Plugin {
 		if (this.settings.enableRibbonIcon) {
 			this.ribbonIcon = this.addRibbonIcon(
 				"search",
-				"QMD Search",
+				"QMD search",
 				() => this.openSearchModal()
 			);
 		}
@@ -270,7 +247,7 @@ export default class QMDPlugin extends Plugin {
 	private setupFileWatchers(): void {
 		// Create debounced update function
 		this.debouncedUpdate = debounce(
-			() => this.triggerIndexUpdate(),
+			() => { void this.triggerIndexUpdate(); },
 			this.settings.debounceMs,
 			true
 		);
@@ -302,7 +279,7 @@ export default class QMDPlugin extends Plugin {
 		if (this.settings.enablePeriodicUpdates) {
 			const intervalMs = this.settings.periodicUpdateMinutes * 60 * 1000;
 			this.periodicUpdateInterval = window.setInterval(
-				() => this.triggerIndexUpdate(),
+				() => { void this.triggerIndexUpdate(); },
 				intervalMs
 			);
 		}
@@ -328,10 +305,10 @@ export default class QMDPlugin extends Plugin {
 				this.settings.lastEmbeddingRunTime = new Date().toISOString();
 				await this.saveSettings();
 			} else if (embedResult.error) {
-				this.recordError(embedResult.error);
+				void this.recordError(embedResult.error);
 			}
 		} else if (result.error) {
-			this.recordError(result.error);
+			void this.recordError(result.error);
 		}
 	}
 
@@ -343,22 +320,22 @@ export default class QMDPlugin extends Plugin {
 
 		// Check if QMD is accessible
 		const status = await this.qmd.testConnection();
-		
+
 		if (!status.success) {
 			// Check what kind of error
-			if (status.error?.toLowerCase().includes("not found") && 
+			if (status.error?.toLowerCase().includes("not found") &&
 				status.error?.toLowerCase().includes("binary")) {
 				// QMD binary not found - show prominent warning
 				new Notice(
-					"QMD binary not found. Please install QMD and configure the path in settings.",
+					"QMD binary not found. Install QMD and configure the path in settings.",
 					15000
 				);
-				this.recordError(status.error);
+				void this.recordError(status.error);
 				return;
 			}
-			
+
 			// Other error - log it
-			this.recordError(status.error || "Unknown QMD error");
+			void this.recordError(status.error || "Unknown QMD error");
 			return;
 		}
 
@@ -367,7 +344,7 @@ export default class QMDPlugin extends Plugin {
 			// Collection doesn't exist, create it
 			await this.ensureCollection();
 		}
-		
+
 		// Check if we need to generate embeddings
 		if (!status.data?.hasEmbeddings) {
 			await this.autoGenerateEmbeddingsIfNeeded();
@@ -390,11 +367,11 @@ export default class QMDPlugin extends Plugin {
 
 		// Check if this is likely the first run (no previous embedding time)
 		const isFirstRun = !this.settings.lastEmbeddingRunTime;
-		
+
 		// Generate embeddings automatically
 		if (isFirstRun) {
 			new Notice(
-				"QMD: Generating embeddings for the first time. " +
+				"QMD: generating embeddings for the first time. " +
 				"This will download ~300MB of AI models and may take several minutes. " +
 				"Semantic search will be available when complete.",
 				15000
@@ -411,7 +388,7 @@ export default class QMDPlugin extends Plugin {
 		if (result.success) {
 			this.settings.lastEmbeddingRunTime = new Date().toISOString();
 			await this.saveSettings();
-			new Notice("Embeddings generated! Semantic search is now available.");
+			new Notice("Embeddings generated. Semantic search is now available.");
 		} else {
 			// Show error for first run, just log for subsequent failures
 			if (isFirstRun) {
@@ -421,7 +398,7 @@ export default class QMDPlugin extends Plugin {
 					15000
 				);
 			}
-			this.recordError(result.error || "Failed to auto-generate embeddings");
+			void this.recordError(result.error || "Failed to auto-generate embeddings");
 		}
 	}
 
@@ -439,10 +416,10 @@ export default class QMDPlugin extends Plugin {
 	 */
 	async saveSettings(): Promise<void> {
 		await this.saveData(this.settings);
-		
+
 		// Update QMD wrapper config if it exists
 		if (this.qmd) {
-			const collectionName = this.settings.collectionName || 
+			const collectionName = this.settings.collectionName ||
 				deriveCollectionName(this.app.vault.getName());
 			this.qmd.updateConfig(
 				this.settings.qmdBinaryPath,
@@ -477,10 +454,10 @@ export default class QMDPlugin extends Plugin {
 		if (result.success) {
 			this.settings.lastIndexUpdateTime = new Date().toISOString();
 			await this.saveSettings();
-			new Notice("QMD index updated successfully!");
+			new Notice("QMD index updated successfully.");
 		} else {
 			new Notice(`Failed to update index: ${result.error}`, 10000);
-			this.recordError(result.error || "Unknown error");
+			void this.recordError(result.error || "Unknown error");
 		}
 	}
 
@@ -494,17 +471,17 @@ export default class QMDPlugin extends Plugin {
 		}
 
 		const action = force ? "Rebuilding" : "Generating";
-		new Notice(`${action} embeddings... This may take a while.`);
-		
+		new Notice(`${action} embeddings... this may take a while.`);
+
 		const result = await this.qmd.generateEmbeddings(force);
 
 		if (result.success) {
 			this.settings.lastEmbeddingRunTime = new Date().toISOString();
 			await this.saveSettings();
-			new Notice("Embeddings generated successfully!");
+			new Notice("Embeddings generated successfully.");
 		} else {
 			new Notice(`Failed to generate embeddings: ${result.error}`, 10000);
-			this.recordError(result.error || "Unknown error");
+			void this.recordError(result.error || "Unknown error");
 		}
 	}
 
@@ -521,10 +498,10 @@ export default class QMDPlugin extends Plugin {
 		const result = await this.qmd.ensureCollection(this.settings.fileMask);
 
 		if (result.success) {
-			new Notice("QMD collection is ready!");
+			new Notice("QMD collection is ready.");
 		} else {
 			new Notice(`Failed to ensure collection: ${result.error}`, 10000);
-			this.recordError(result.error || "Unknown error");
+			void this.recordError(result.error || "Unknown error");
 		}
 	}
 
@@ -538,9 +515,9 @@ export default class QMDPlugin extends Plugin {
 		}
 
 		const modal = new QMDSearchModal(this.app, this.qmd, this.settings, {
-			onResultSelect: (result) => this.openSearchResult(result),
-			onSearchModeUsed: (mode, isFallback) => this.recordSearchMode(mode, isFallback),
-			onError: (error) => this.recordError(error),
+			onResultSelect: (result) => { void this.openSearchResult(result); },
+			onSearchModeUsed: (mode, isFallback) => { void this.recordSearchMode(mode, isFallback); },
+			onError: (error) => { void this.recordError(error); },
 		});
 		modal.open();
 	}
