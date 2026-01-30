@@ -78,8 +78,8 @@ export class QMDSearchModal extends SuggestModal<SearchResultItem> {
 	/**
 	 * Called when modal opens - inject progress bar
 	 */
-	onOpen(): void {
-		super.onOpen();
+	async onOpen(): Promise<void> {
+		await super.onOpen();
 		this.injectStatusElements();
 		const input = this.getInputElement();
 		if (input) {

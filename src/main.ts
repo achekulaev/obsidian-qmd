@@ -530,7 +530,7 @@ export default class QMDPlugin extends Plugin {
 
 		if (leaves.length > 0) {
 			// Already open, reveal it
-			this.app.workspace.revealLeaf(leaves[0]);
+			await this.app.workspace.revealLeaf(leaves[0]);
 		} else {
 			// Create new leaf in right sidebar
 			const leaf = this.app.workspace.getRightLeaf(false);
@@ -539,7 +539,7 @@ export default class QMDPlugin extends Plugin {
 					type: QMD_SEARCH_VIEW_TYPE,
 					active: true,
 				});
-				this.app.workspace.revealLeaf(leaf);
+				await this.app.workspace.revealLeaf(leaf);
 			}
 		}
 	}
