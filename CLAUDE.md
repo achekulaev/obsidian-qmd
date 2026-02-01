@@ -5,6 +5,7 @@ This file provides context for AI assistants working on this project.
 ## Rules
 
 - Always run `npm run build && npm test && npm run lint` before committing code changes, unless the build/test/lint was already run and passed in the current session with no code changes since.
+- When committing in external repos or cloned directories (e.g. scratchpad), always check `git config user.name` and `git config user.email` in the **main project repo** first and configure the same values in the external repo before committing.
 
 ## Project Overview
 
