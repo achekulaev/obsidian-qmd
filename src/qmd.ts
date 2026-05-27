@@ -15,8 +15,33 @@ const defaultExecAsync = promisify(exec);
 // Type for the async exec function
 export type ExecAsyncFn = (
 	command: string,
-	options?: { maxBuffer?: number; cwd?: string }
+	options?: { maxBuffer?: number; cwd?: string; env?: NodeJS.ProcessEnv }
 ) => Promise<{ stdout: string; stderr: string }>;
+
+/**
+ * Build an env that includes common package-manager bin dirs on PATH.
+ *
+ * GUI-launched apps on macOS (Dock/Finder/Spotlight) inherit a minimal PATH
+ * that excludes /opt/homebrew/bin and /usr/local/bin. Even when the user
+ * configures an absolute binaryPath, scripts with `#!/usr/bin/env node`
+ * shebangs (like qmd) fail because `env` can't find `node`. Augmenting PATH
+ * here lets the shebang resolve and lets qmd itself shell out to its own
+ * dependencies.
+ */
+function buildExecEnv(): NodeJS.ProcessEnv {
+	if (process.platform !== "darwin") {
+		return process.env;
+	}
+	const extras = ["/opt/homebrew/bin", "/usr/local/bin"];
+	const current = process.env.PATH ?? "";
+	const parts = current.split(":").filter(Boolean);
+	for (const p of extras) {
+		if (!parts.includes(p)) {
+			parts.push(p);
+		}
+	}
+	return { ...process.env, PATH: parts.join(":") };
+}
 
 // --- Types for QMD JSON output ---
 
@@ -196,6 +221,7 @@ export class QMDWrapper {
 			const { stdout, stderr } = await this.execAsync(command, {
 				maxBuffer: 10 * 1024 * 1024, // 10MB buffer for large outputs
 				cwd: this.vaultPath,
+				env: buildExecEnv(),
 			});
 			return { stdout, stderr };
 		} catch (error) {
@@ -253,6 +279,7 @@ export class QMDWrapper {
 				{
 					maxBuffer: 10 * 1024 * 1024,
 					cwd: this.vaultPath,
+					env: buildExecEnv(),
 				},
 				(error, stdout, stderr) => {
 					this.currentSearchProcess = null;
