@@ -168,6 +168,26 @@ Collections
 			const calledCommand = mockExecAsync.mock.calls[0][0] as string;
 			expect(calledCommand).toContain('\\"');
 		});
+
+		it("should scope the search to the configured collection", async () => {
+			mockExecAsync.mockResolvedValueOnce({ stdout: "[]", stderr: "" });
+
+			await wrapper.semanticSearch("test query");
+
+			const calledCommand = mockExecAsync.mock.calls[0][0] as string;
+			expect(calledCommand).toContain('--collection "test-collection"');
+		});
+
+		it("should use the collection set via updateConfig", async () => {
+			wrapper.updateConfig("qmd", "other-collection", null);
+			mockExecAsync.mockResolvedValueOnce({ stdout: "[]", stderr: "" });
+
+			await wrapper.semanticSearch("test query");
+
+			const calledCommand = mockExecAsync.mock.calls[0][0] as string;
+			expect(calledCommand).toContain('--collection "other-collection"');
+			expect(calledCommand).not.toContain("test-collection");
+		});
 	});
 
 	describe("keywordSearch", () => {
@@ -186,6 +206,15 @@ Collections
 			expect(result.success).toBe(true);
 			expect(result.data).toHaveLength(1);
 			expect(result.data?.[0].path).toBe("note1.md");
+		});
+
+		it("should scope the search to the configured collection", async () => {
+			mockExecAsync.mockResolvedValueOnce({ stdout: "[]", stderr: "" });
+
+			await wrapper.keywordSearch("keyword test");
+
+			const calledCommand = mockExecAsync.mock.calls[0][0] as string;
+			expect(calledCommand).toContain('--collection "test-collection"');
 		});
 	});
 
