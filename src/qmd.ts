@@ -522,13 +522,15 @@ export class QMDWrapper {
 	}
 
 	/**
-	 * Perform semantic search (vsearch)
+	 * Perform semantic search (vsearch), scoped to this vault's collection
+	 * Note: an index can hold several collections, so an unscoped search
+	 * leaks in results from the others
 	 */
 	async semanticSearch(query: string): Promise<QMDCommandResult<QMDSearchResult[]>> {
 		return this.queueCommand(async () => {
 			try {
 				const escapedQuery = query.replace(/"/g, '\\"');
-				const cmd = this.buildBaseCommand("vsearch") + ` "${escapedQuery}" --json`;
+				const cmd = this.buildBaseCommand("vsearch") + ` "${escapedQuery}" --collection "${this.collectionName}" --json`;
 				const { stdout, stderr } = await this.execSearchCommand(cmd);
 
 				try {
@@ -555,13 +557,15 @@ export class QMDWrapper {
 	}
 
 	/**
-	 * Perform keyword search (search)
+	 * Perform keyword search (search), scoped to this vault's collection
+	 * Note: an index can hold several collections, so an unscoped search
+	 * leaks in results from the others
 	 */
 	async keywordSearch(query: string): Promise<QMDCommandResult<QMDSearchResult[]>> {
 		return this.queueCommand(async () => {
 			try {
 				const escapedQuery = query.replace(/"/g, '\\"');
-				const cmd = this.buildBaseCommand("search") + ` "${escapedQuery}" --json`;
+				const cmd = this.buildBaseCommand("search") + ` "${escapedQuery}" --collection "${this.collectionName}" --json`;
 				const { stdout, stderr } = await this.execSearchCommand(cmd);
 
 				try {
